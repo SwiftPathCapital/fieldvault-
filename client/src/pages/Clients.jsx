@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Plus, Search, Phone, Mail, MapPin } from 'lucide-react';
@@ -131,12 +132,12 @@ export default function Clients() {
       </div>
 
       {/* Add Client Modal */}
-      {showAdd && (
+      {showAdd && createPortal(
         <div style={{
-          position: 'fixed', inset: 0,
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
           background: 'rgba(0,0,0,0.7)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '24px'
+          zIndex: 9999, padding: '24px'
         }}
           onClick={e => e.target === e.currentTarget && setShowAdd(false)}
         >
@@ -211,7 +212,7 @@ export default function Clients() {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
