@@ -10,16 +10,17 @@ export default function Jobs() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ client_id: '', title: '', service_type: 'spray_foam', status: 'new', job_address: '', job_city: '', job_state: 'LA', square_footage: '', estimated_value: '', scheduled_date: '', follow_up_date: '' });
+  const [form, setForm] = useState({ client_id: '', title: '', service_type: 'spray_foam', status: 'new', assigned_to: '', job_address: '', job_city: '', job_state: 'LA', square_footage: '', estimated_value: '', scheduled_date: '', follow_up_date: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.get('/jobs'), api.get('/clients')])
-      .then(([j, c]) => { setJobs(j); setClients(c); })
+    Promise.all([api.get('/jobs'), api.get('/clients'), api.get('/users')])
+      .then(([j, c, u]) => { setJobs(j); setClients(c); setUsers(u); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,6 +40,7 @@ export default function Jobs() {
       if (!body.estimated_value) delete body.estimated_value;
       if (!body.scheduled_date) delete body.scheduled_date;
       if (!body.follow_up_date) delete body.follow_up_date;
+      if (!body.assigned_to) delete body.assigned_to;
       const newJob = await api.post('/jobs', body);
       setJobs(prev => [newJob, ...prev]);
       setShowAdd(false);
@@ -79,16 +81,16 @@ export default function Jobs() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Job', 'Client', 'Service', 'Scheduled', 'Value', 'Status'].map(h => (
+              {['Job', 'Client', 'Assigned', 'Service', 'Scheduled', 'Value', 'Status'].map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>Loading...</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>
+              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>
                 <Briefcase size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.3 }} />
                 No jobs found
               </td></tr>
@@ -106,6 +108,9 @@ export default function Jobs() {
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-2)' }}>
                   {job.clients?.first_name} {job.clients?.last_name}
+                </td>
+                <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-2)' }}>
+                  {job.users ? `${job.users.first_name} ${job.users.last_name}` : <span style={{ color: 'var(--text-3)' }}>—</span>}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-2)', textTransform: 'capitalize' }}>
                   {job.service_type?.replace(/_/g, ' ')}
@@ -142,6 +147,13 @@ export default function Jobs() {
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-2)', fontWeight: 600 }}>Job Title *</label>
                 <input value={form.title} onChange={e => setForm(p => ({...p, title: e.target.value}))} placeholder="e.g. Attic Spray Foam - New Orleans" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-2)', fontWeight: 600 }}>Assign To</label>
+                <select value={form.assigned_to} onChange={e => setForm(p => ({...p, assigned_to: e.target.value}))}>
+                  <option value="">Unassigned</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+                </select>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>

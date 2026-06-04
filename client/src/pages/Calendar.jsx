@@ -14,10 +14,15 @@ const EVENT_COLORS = {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [form, setForm] = useState({ title: '', description: '', start_time: '', end_time: '', event_type: 'appointment' });
+  const [form, setForm] = useState({ title: '', description: '', start_time: '', end_time: '', event_type: 'appointment', assigned_to: '' });
+
+  useEffect(() => {
+    api.get('/users').then(setUsers);
+  }, []);
 
   useEffect(() => {
     const start = startOfMonth(currentDate).toISOString();
@@ -41,10 +46,12 @@ export default function CalendarPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const newEvent = await api.post('/calendar', form);
+    const body = { ...form };
+    if (!body.assigned_to) delete body.assigned_to;
+    const newEvent = await api.post('/calendar', body);
     setEvents(prev => [...prev, newEvent]);
     setShowAdd(false);
-    setForm({ title: '', description: '', start_time: '', end_time: '', event_type: 'appointment' });
+    setForm({ title: '', description: '', start_time: '', end_time: '', event_type: 'appointment', assigned_to: '' });
   };
 
   const openAddForDate = (d) => {
@@ -142,6 +149,7 @@ export default function CalendarPage() {
                       textOverflow: 'ellipsis'
                     }}>
                       {format(new Date(ev.start_time), 'h:mma')} {ev.title}
+                      {ev.users && <span style={{ opacity: 0.7 }}> · {ev.users.first_name}</span>}
                     </div>
                   ))}
                   {dayEvents.length > 3 && (
@@ -180,6 +188,13 @@ export default function CalendarPage() {
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-2)', fontWeight: 600 }}>End</label>
                   <input value={form.end_time} type="datetime-local" onChange={e => setForm(p => ({...p, end_time: e.target.value}))} />
                 </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-2)', fontWeight: 600 }}>Assign To</label>
+                <select value={form.assigned_to} onChange={e => setForm(p => ({...p, assigned_to: e.target.value}))}>
+                  <option value="">Unassigned</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-2)', fontWeight: 600 }}>Notes</label>
